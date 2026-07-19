@@ -1,8 +1,9 @@
-
-
-
 <odoo>
   <data>
+
+    <!-- ============================================= -->
+    <!-- Estate Property: list, form, action, menus     -->
+    <!-- ============================================= -->
 
     <!-- List view -->
     <record model="ir.ui.view" id="estate_property_list_view">
@@ -11,10 +12,12 @@
       <field name="arch" type="xml">
         <list>
           <field name="name"/>
+          <field name="property_type_id"/>
           <field name="postcode"/>
           <field name="bedrooms"/>
           <field name="living_area"/>
           <field name="expected_price"/>
+          <field name="best_price"/>
           <field name="selling_price"/>
           <field name="date_availability"/>
         </list>
@@ -33,9 +36,11 @@
               <field name="description"/>
               <field name="postcode"/>
               <field name="date_availability"/>
+              <field name="property_type_id"/>
             </group>
             <group>
               <field name="expected_price"/>
+              <field name="best_price"/>
               <field name="selling_price"/>
               <field name="bedrooms"/>
               <field name="living_area"/>
@@ -45,6 +50,35 @@
               <field name="garden_area"/>
               <field name="garden_orientation"/>
             </group>
+
+            <!-- Offers show up as an editable table right inside
+                 the property form, with Accept/Refuse buttons on
+                 each row instead of a plain status dropdown. -->
+            <notebook>
+              <page string="Offers">
+                <field name="offer_ids">
+                  <list editable="bottom">
+                    <field name="price"/>
+                    <field name="partner_id"/>
+                    <field name="status" column_invisible="1"/>
+
+                    <!-- Accept button: only shows while the offer
+                         is still pending (no status set yet) -->
+                    <button name="action_accept" type="object" string="Accept"
+                            icon="fa-check" invisible="status != False"/>
+
+                    <!-- Refuse button: same condition -->
+                    <button name="action_refuse" type="object" string="Refuse"
+                            icon="fa-times" invisible="status != False"/>
+
+                    <!-- Visual confirmation of the outcome once decided -->
+                    <field name="status" widget="badge"
+                           decoration-success="status == 'accepted'"
+                           decoration-danger="status == 'refused'"/>
+                  </list>
+                </field>
+              </page>
+            </notebook>
           </sheet>
         </form>
       </field>
@@ -57,15 +91,44 @@
       <field name="view_mode">list,form</field>
     </record>
 
+    <!-- ============================================= -->
+    <!-- Estate Property Type: list, form, action        -->
+    <!-- ============================================= -->
+
+    <record model="ir.ui.view" id="estate_property_type_list_view">
+      <field name="name">estate.property.type.list</field>
+      <field name="model">estate.property.type</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="name"/>
+        </list>
+      </field>
+    </record>
+
+    <record model="ir.actions.act_window" id="estate_property_type_action_window">
+      <field name="name">Property Types</field>
+      <field name="res_model">estate.property.type</field>
+      <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ============================================= -->
+    <!-- Menus                                           -->
+    <!-- ============================================= -->
+
     <!-- Top menu item -->
     <menuitem name="Real Estate" id="estate_menu_root"/>
 
     <!-- Sub-menu category -->
     <menuitem name="Advertisements" id="estate_menu_advertisements" parent="estate_menu_root"/>
 
-    <!-- Menu item pointing to the action -->
+    <!-- Menu item pointing to the properties action -->
     <menuitem name="Properties" id="estate_menu_properties" parent="estate_menu_advertisements"
               action="estate_property_action_window"/>
+
+    <!-- Menu item for managing property types, so an admin can
+         edit the list separately from individual properties -->
+    <menuitem name="Property Types" id="estate_menu_property_types" parent="estate_menu_advertisements"
+              action="estate_property_type_action_window"/>
 
   </data>
 </odoo>
