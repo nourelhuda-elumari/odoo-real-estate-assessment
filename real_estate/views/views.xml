@@ -2,25 +2,99 @@
   <data>
 
     <!-- ============================================= -->
-    <!-- Estate Property: list, form, action, menus     -->
+    <!-- Estate Property: list, kanban, form, action, menus -->
     <!-- ============================================= -->
 
-    <!-- List view -->
+    <!-- List view — color-coded rows based on how good the deal is -->
     <record model="ir.ui.view" id="estate_property_list_view">
       <field name="name">estate.property.list</field>
       <field name="model">estate.property</field>
       <field name="arch" type="xml">
-        <list>
-          <field name="name"/>
-          <field name="property_type_id"/>
+        <list decoration-success="best_price &gt;= expected_price"
+              decoration-warning="best_price &gt; 0 and best_price &lt; expected_price"
+              decoration-muted="best_price == 0"
+              decoration-bf="best_price &gt;= expected_price">
+          <field name="name" string="Property"/>
+          <field name="property_type_id" widget="badge"/>
           <field name="postcode"/>
-          <field name="bedrooms"/>
-          <field name="living_area"/>
+          <field name="bedrooms" widget="badge" decoration-info="bedrooms &gt;= 3"/>
+          <field name="living_area" string="Area (m²)"/>
+          <field name="garden" widget="boolean_toggle"/>
+          <field name="garage" widget="boolean_toggle"/>
           <field name="expected_price"/>
           <field name="best_price"/>
           <field name="selling_price"/>
           <field name="date_availability"/>
         </list>
+      </field>
+    </record>
+
+    <!-- Kanban view — colorful visual cards for browsing listings -->
+    <record model="ir.ui.view" id="estate_property_kanban_view">
+      <field name="name">estate.property.kanban</field>
+      <field name="model">estate.property</field>
+      <field name="arch" type="xml">
+        <kanban class="o_kanban_mobile">
+          <field name="name"/>
+          <field name="property_type_id"/>
+          <field name="expected_price"/>
+          <field name="best_price"/>
+          <field name="bedrooms"/>
+          <field name="living_area"/>
+          <field name="garden"/>
+          <field name="garage"/>
+          <field name="garden_orientation"/>
+          <templates>
+            <t t-name="card">
+              <div class="oe_kanban_global_click o_kanban_card p-0 mb-3 shadow-sm rounded overflow-hidden">
+                <!-- Colored header band -->
+                <div class="p-3 text-bg-primary">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <strong class="fs-5"><field name="name"/></strong>
+                    <span class="badge text-bg-light text-primary">
+                      <field name="property_type_id"/>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Body -->
+                <div class="p-3">
+                  <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">
+                      <i class="fa fa-bed me-1"/><field name="bedrooms"/> beds
+                    </span>
+                    <span class="text-muted">
+                      <i class="fa fa-arrows-alt me-1"/><field name="living_area"/> m²
+                    </span>
+                  </div>
+
+                  <div class="mb-2">
+                    <span t-if="record.garden.raw_value" class="badge text-bg-success me-1">
+                      <i class="fa fa-tree me-1"/>Garden
+                    </span>
+                    <span t-if="record.garage.raw_value" class="badge text-bg-info me-1">
+                      <i class="fa fa-car me-1"/>Garage
+                    </span>
+                    <span t-if="record.garden_orientation.raw_value" class="badge text-bg-secondary">
+                      <i class="fa fa-compass me-1"/><field name="garden_orientation"/>
+                    </span>
+                  </div>
+
+                  <div class="d-flex justify-content-between align-items-end border-top pt-2">
+                    <div>
+                      <div class="text-muted small">Expected</div>
+                      <div class="fw-bold"><field name="expected_price"/></div>
+                    </div>
+                    <div class="text-end">
+                      <div class="text-muted small">Best offer</div>
+                      <div class="fw-bold text-success"><field name="best_price"/></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </t>
+          </templates>
+        </kanban>
       </field>
     </record>
 
@@ -31,45 +105,65 @@
       <field name="arch" type="xml">
         <form>
           <sheet>
+            <!-- Ribbons for eye-catching highlights -->
+            <widget name="web_ribbon" title="Garden" bg_color="text-bg-success" invisible="not garden"/>
+            <widget name="web_ribbon" title="Garage" bg_color="text-bg-info" invisible="not garage"/>
+
+            <div class="oe_title">
+              <h1><field name="name" placeholder="e.g. Cozy Beachside Villa"/></h1>
+              <h3 class="text-muted">
+                <field name="property_type_id" placeholder="Property Type"/>
+              </h3>
+            </div>
+
             <group>
-              <field name="name"/>
-              <field name="description"/>
-              <field name="postcode"/>
-              <field name="date_availability"/>
-              <field name="property_type_id"/>
+              <group string="🏠 Details">
+                <field name="description"/>
+                <field name="postcode"/>
+                <field name="date_availability"/>
+                <field name="bedrooms"/>
+                <field name="living_area"/>
+                <field name="facades"/>
+              </group>
+
+              <group string="💰 Pricing">
+                <field name="expected_price"/>
+                <field name="best_price"/>
+                <field name="selling_price"/>
+              </group>
             </group>
-            <group>
-              <field name="expected_price"/>
-              <field name="best_price"/>
-              <field name="selling_price"/>
-              <field name="bedrooms"/>
-              <field name="living_area"/>
-              <field name="facades"/>
-              <field name="garage"/>
-              <field name="garden"/>
-              <field name="garden_area"/>
-              <field name="garden_orientation"/>
+
+            <group string="🌳 Outdoor">
+              <group>
+                <field name="garage" widget="boolean_toggle"/>
+                <field name="garden" widget="boolean_toggle"/>
+              </group>
+              <group invisible="not garden">
+                <field name="garden_area"/>
+                <field name="garden_orientation" widget="radio" options="{'horizontal': true}"/>
+              </group>
             </group>
 
             <!-- Offers show up as an editable table right inside
                  the property form, with Accept/Refuse buttons on
                  each row instead of a plain status dropdown. -->
             <notebook>
-              <page string="Offers">
+              <page string="💼 Offers">
                 <field name="offer_ids">
-                  <list editable="bottom">
+                  <list editable="bottom" decoration-success="status == 'accepted'"
+                        decoration-danger="status == 'refused'">
                     <field name="price"/>
-                    <field name="partner_id"/>
+                    <field name="partner_id" widget="many2one_avatar"/>
                     <field name="status" column_invisible="1"/>
 
                     <!-- Accept button: only shows while the offer
                          is still pending (no status set yet) -->
                     <button name="action_accept" type="object" string="Accept"
-                            icon="fa-check" invisible="status != False"/>
+                            class="btn-success" icon="fa-check" invisible="status != False"/>
 
                     <!-- Refuse button: same condition -->
                     <button name="action_refuse" type="object" string="Refuse"
-                            icon="fa-times" invisible="status != False"/>
+                            class="btn-danger" icon="fa-times" invisible="status != False"/>
 
                     <!-- Visual confirmation of the outcome once decided -->
                     <field name="status" widget="badge"
@@ -84,11 +178,11 @@
       </field>
     </record>
 
-    <!-- Action: opens the model in list/form view -->
+    <!-- Action: opens the model in kanban/list/form view -->
     <record model="ir.actions.act_window" id="estate_property_action_window">
       <field name="name">Properties</field>
       <field name="res_model">estate.property</field>
-      <field name="view_mode">list,form</field>
+      <field name="view_mode">kanban,list,form</field>
     </record>
 
     <!-- ============================================= -->
