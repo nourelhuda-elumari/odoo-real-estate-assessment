@@ -26,6 +26,23 @@ class EstateProperty(models.Model):
         ],
     )
 
+    # Monthly rent, for properties offered for rent instead of / alongside sale.
+    rent_price = fields.Float(string="Monthly Rent")
+
+    # A Google Maps URL pointing at the property's location. Paste a
+    # "Share location" link copied from Google Maps. Rendered clickable
+    # in the form/kanban views via widget="url".
+    google_map_link = fields.Char(string="Google Maps Link")
+
+    # Main/cover photo. fields.Image handles resizing/storage automatically.
+    image_1920 = fields.Image(string="Main Photo", max_width=1920, max_height=1920)
+
+    # Extra photos (gallery). One2many to a lightweight image-holder model,
+    # same pattern Odoo uses for multi-photo galleries elsewhere.
+    property_image_ids = fields.One2many(
+        "estate.property.image", "property_id", string="Photos"
+    )
+
     # What kind of property this is (House, Apartment, Villa...).
     # Many2one because a property is only ever ONE type at a time.
     property_type_id = fields.Many2one("estate.property.type", string="Property Type")
@@ -46,6 +63,17 @@ class EstateProperty(models.Model):
             # max() on an empty list crashes, so default to 0 when
             # there are no offers yet.
             property.best_price = max(property.offer_ids.mapped("price"), default=0.0)
+
+
+class EstatePropertyImage(models.Model):
+    _name = "estate.property.image"
+    _description = "Photo of a Real Estate Property"
+    _order = "sequence, id"
+
+    name = fields.Char(string="Caption")
+    sequence = fields.Integer(default=10)
+    image = fields.Image(string="Photo", required=True, max_width=1920, max_height=1920)
+    property_id = fields.Many2one("estate.property", required=True, ondelete="cascade")
 
 
 class EstatePropertyType(models.Model):

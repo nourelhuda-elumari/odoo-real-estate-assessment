@@ -22,6 +22,7 @@
           <field name="garden" widget="boolean_toggle"/>
           <field name="garage" widget="boolean_toggle"/>
           <field name="expected_price"/>
+          <field name="rent_price" string="Rent/mo"/>
           <field name="best_price"/>
           <field name="selling_price"/>
           <field name="date_availability"/>
@@ -38,15 +39,23 @@
           <field name="name"/>
           <field name="property_type_id"/>
           <field name="expected_price"/>
+          <field name="rent_price"/>
           <field name="best_price"/>
           <field name="bedrooms"/>
           <field name="living_area"/>
           <field name="garden"/>
           <field name="garage"/>
           <field name="garden_orientation"/>
+          <field name="google_map_link"/>
+          <field name="image_1920"/>
           <templates>
             <t t-name="card">
               <div class="oe_kanban_global_click o_kanban_card p-0 mb-3 shadow-sm rounded overflow-hidden">
+                <!-- Cover photo -->
+                <img t-if="record.image_1920.raw_value"
+                     t-attf-src="/web/image/estate.property/{{record.id.raw_value}}/image_1920"
+                     class="w-100" style="height:140px;object-fit:cover;"/>
+
                 <!-- Colored header band -->
                 <div class="p-3 text-bg-primary">
                   <div class="d-flex justify-content-between align-items-center">
@@ -86,10 +95,18 @@
                       <div class="fw-bold"><field name="expected_price"/></div>
                     </div>
                     <div class="text-end">
-                      <div class="text-muted small">Best offer</div>
-                      <div class="fw-bold text-success"><field name="best_price"/></div>
+                      <div class="text-muted small">Rent/mo</div>
+                      <div class="fw-bold text-info"><field name="rent_price"/></div>
                     </div>
                   </div>
+
+                  <a t-if="record.google_map_link.raw_value"
+                     t-att-href="record.google_map_link.raw_value"
+                     target="_blank"
+                     class="btn btn-sm btn-outline-secondary mt-2 w-100"
+                     onclick="event.stopPropagation()">
+                    <i class="fa fa-map-marker me-1"/>View on map
+                  </a>
                 </div>
               </div>
             </t>
@@ -109,6 +126,9 @@
             <widget name="web_ribbon" title="Garden" bg_color="text-bg-success" invisible="not garden"/>
             <widget name="web_ribbon" title="Garage" bg_color="text-bg-info" invisible="not garage"/>
 
+            <!-- Cover photo, top-right corner like a contact avatar -->
+            <field name="image_1920" widget="image" class="oe_avatar"/>
+
             <div class="oe_title">
               <h1><field name="name" placeholder="e.g. Cozy Beachside Villa"/></h1>
               <h3 class="text-muted">
@@ -124,12 +144,14 @@
                 <field name="bedrooms"/>
                 <field name="living_area"/>
                 <field name="facades"/>
+                <field name="google_map_link" widget="url" string="Location (Google Maps)"/>
               </group>
 
               <group string="💰 Pricing">
                 <field name="expected_price"/>
                 <field name="best_price"/>
                 <field name="selling_price"/>
+                <field name="rent_price" string="Monthly Rent"/>
               </group>
             </group>
 
@@ -170,6 +192,28 @@
                            decoration-success="status == 'accepted'"
                            decoration-danger="status == 'refused'"/>
                   </list>
+                </field>
+              </page>
+
+              <!-- Photo gallery: add/remove photos as kanban cards -->
+              <page string="📷 Photos">
+                <field name="property_image_ids" context="{'default_property_id': id}">
+                  <kanban>
+                    <field name="image"/>
+                    <field name="name"/>
+                    <templates>
+                      <t t-name="card">
+                        <div class="oe_kanban_global_click o_kanban_card p-2">
+                          <img t-attf-src="/web/image/estate.property.image/{{record.id.raw_value}}/image"
+                               class="img img-fluid rounded"
+                               style="max-height:150px;width:100%;object-fit:cover;"/>
+                          <div class="text-center mt-1">
+                            <field name="name"/>
+                          </div>
+                        </div>
+                      </t>
+                    </templates>
+                  </kanban>
                 </field>
               </page>
             </notebook>
