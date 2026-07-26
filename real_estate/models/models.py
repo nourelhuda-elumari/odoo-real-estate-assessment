@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 
 
 class EstateProperty(models.Model):
@@ -57,12 +58,61 @@ class EstateProperty(models.Model):
     # added, removed, or its price changes.
     best_price = fields.Float(compute="_compute_best_price", string="Best Offer")
 
+    # ------------------------------------------------------------------
+    # SQL constraints — enforced directly by the database, best for
+    # simple single-field checks. Each tuple = (internal name, SQL
+    # CHECK condition, error message shown to the user).
+    # ------------------------------------------------------------------
+    _sql_constraints = [
+        ('check_expected_price', 'CHECK(expected_price > 0)',
+         'The expected price must be strictly positive.'),
+        ('check_selling_price', 'CHECK(selling_price >= 0)',
+         'The selling price must be positive.'),
+        ('check_bedrooms', 'CHECK(bedrooms >= 0)',
+         'The number of bedrooms cannot be negative.'),
+        ('check_living_area', 'CHECK(living_area >= 0)',
+         'The living area cannot be negative.'),
+        ('check_facades', 'CHECK(facades >= 0)',
+         'The number of facades cannot be negative.'),
+        ('check_garden_area', 'CHECK(garden_area >= 0)',
+         'The garden area cannot be negative.'),
+        ('check_rent_price', 'CHECK(rent_price >= 0)',
+         'The monthly rent cannot be negative.'),
+    ]
+
     @api.depends("offer_ids.price")
     def _compute_best_price(self):
         for property in self:
             # max() on an empty list crashes, so default to 0 when
             # there are no offers yet.
             property.best_price = max(property.offer_ids.mapped("price"), default=0.0)
+
+    # ------------------------------------------------------------------
+    # Python constraints — for rules that need to compare multiple
+    # fields or need custom logic that plain SQL can't express well.
+    # ------------------------------------------------------------------
+
+    @api.constrains('selling_price', 'expected_price')
+    def _check_selling_price(self):
+        for record in self:
+            # Only check once a real selling price has been entered —
+            # otherwise every unsold property (selling_price = 0.0)
+            # would fail this check immediately.
+            if record.selling_price and record.selling_price < 0.9 * record.expected_price:
+                raise ValidationError(
+                    "The selling price cannot be lower than 90% of the expected price. "
+                    "You must reduce the expected price if you want to accept this offer."
+                )
+
+    @api.constrains('garden', 'garden_area', 'garden_orientation')
+    def _check_garden_consistency(self):
+        for record in self:
+            # If there's no garden, there shouldn't be a garden area
+            # or orientation set — that data would be misleading.
+            if not record.garden and (record.garden_area or record.garden_orientation):
+                raise ValidationError(
+                    "A property without a garden cannot have a garden area or orientation."
+                )
 
 
 class EstatePropertyImage(models.Model):
@@ -83,6 +133,13 @@ class EstatePropertyType(models.Model):
     # A clean, consistent list of property kinds (House, Apartment,
     # Villa...) instead of everyone typing free text differently.
     name = fields.Char(required=True)
+
+    # Prevents creating "House" twice by accident, which would just
+    # confuse the dropdown with duplicate-looking entries.
+    _sql_constraints = [
+        ('check_name_unique', 'UNIQUE(name)',
+         'A property type with this name already exists.'),
+    ]
 
 
 class EstatePropertyOffer(models.Model):
@@ -109,6 +166,12 @@ class EstatePropertyOffer(models.Model):
     # Every offer belongs to exactly ONE property. This Many2one is
     # what makes offer_ids (the One2many above) actually work.
     property_id = fields.Many2one("estate.property", required=True)
+
+    # An offer of 0 or negative money is meaningless.
+    _sql_constraints = [
+        ('check_price', 'CHECK(price > 0)',
+         'The offer price must be strictly positive.'),
+    ]
 
     def action_accept(self):
         # Accepting an offer should actually mean something: the
