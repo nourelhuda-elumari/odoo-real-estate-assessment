@@ -1,0 +1,24 @@
+<odoo>
+  <data>
+
+    <!-- ============================================= -->
+    <!-- Menus                                           -->
+    <!-- ============================================= -->
+
+    <!-- Top menu item -->
+    <menuitem name="Real Estate" id="estate_menu_root"/>
+
+    <!-- Sub-menu category -->
+    <menuitem name="Advertisements" id="estate_menu_advertisements" parent="estate_menu_root"/>
+
+    <!-- Menu item pointing to the properties action -->
+    <menuitem name="Properties" id="estate_menu_properties" parent="estate_menu_advertisements"
+              action="estate_property_action_window"/>
+
+    <!-- Menu item for managing property types, so an admin can
+         edit the list separately from individual properties -->
+    <menuitem name="Property Types" id="estate_menu_property_types" parent="estate_menu_advertisements"
+              action="estate_property_type_action_window"/>
+
+  </data>
+</odoo>
