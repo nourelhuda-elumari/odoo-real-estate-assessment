@@ -21,11 +21,14 @@ Long description of module's purpose
 
     # always loaded
    'data': [
+       'security/estate_security.xml',  
     'security/ir.model.access.csv',
     'views/estate_property_views.xml',
     'views/estate_property_type_views.xml',
     'views/templates.xml',
     'views/estate_menus.xml',
+    'views/res_partner_views.xml',
+    'report/estate_property_reports.xml',
 ],
     # only loaded in demonstration mode
     'demo': [

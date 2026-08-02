@@ -58,6 +58,13 @@ class EstateProperty(models.Model):
     # added, removed, or its price changes.
     best_price = fields.Float(compute="_compute_best_price", string="Best Offer")
 
+    # Which agent this property "belongs to". Defaults to whoever
+    # creates the record. This is what our security record rule
+    # will use to restrict salespeople to only their own properties.
+    salesperson_id = fields.Many2one(
+        "res.users", string="Salesperson", default=lambda self: self.env.user
+    )
+
     # ------------------------------------------------------------------
     # SQL constraints — enforced directly by the database, best for
     # simple single-field checks. Each tuple = (internal name, SQL
