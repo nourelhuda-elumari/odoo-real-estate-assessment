@@ -159,10 +159,31 @@
 
             <notebook>
               <page string="Offers">
-                <field name="offer_ids"/>
+                <field name="offer_ids">
+                  <list editable="bottom">
+                    <field name="price"/>
+                    <field name="partner_id"/>
+                    <field name="status"/>
+                  </list>
+                </field>
               </page>
               <page string="Photos">
-                <field name="property_image_ids"/>
+                <field name="property_image_ids">
+                  <kanban>
+                    <field name="image"/>
+                    <field name="name"/>
+                    <templates>
+                      <t t-name="card">
+                        <div class="o_kanban_image_full p-1">
+                          <field name="image" widget="image" class="w-100 rounded"/>
+                          <div t-if="record.name.raw_value" class="text-center small text-muted mt-1">
+                            <field name="name"/>
+                          </div>
+                        </div>
+                      </t>
+                    </templates>
+                  </kanban>
+                </field>
               </page>
             </notebook>
           </sheet>
@@ -170,7 +191,7 @@
       </field>
     </record>
 
-    <!-- Search view (Fixed syntax) -->
+    <!-- Search view -->
     <record model="ir.ui.view" id="estate_property_search_view">
       <field name="name">estate.property.search</field>
       <field name="model">estate.property</field>
@@ -200,7 +221,7 @@
           <field name="property_type_id" type="row"/>
           <field name="garden_orientation" type="col"/>
           <field name="expected_price" type="measure"/>
-          <field name="best_price" type="measure"/>
+          <field name="best_price" type="measure" operator="max"/>
           <field name="selling_price" type="measure"/>
         </pivot>
       </field>
