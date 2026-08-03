@@ -2,7 +2,8 @@
   <data>
 
     <!-- ============================================= -->
-    <!-- Estate Property: list, kanban, form, action     -->
+    <!-- Estate Property: list, kanban, form, search,    -->
+    <!-- pivot, action                                   -->
     <!-- ============================================= -->
 
     <!-- List view — color-coded rows based on how good the deal is -->
@@ -223,11 +224,69 @@
       </field>
     </record>
 
-    <!-- Action: opens the model in kanban/list/form view -->
+    <!-- Search view — default filters + group-bys -->
+    <record model="ir.ui.view" id="estate_property_search_view">
+      <field name="name">estate.property.search</field>
+      <field name="model">estate.property</field>
+      <field name="arch" type="xml">
+        <search string="Search Properties">
+          <field name="name" string="Property"/>
+          <field name="postcode"/>
+          <field name="property_type_id"/>
+          <field name="salesperson_id"/>
+          <field name="living_area" filter_domain="[('living_area', '&gt;=', self)]"/>
+
+          <filter string="Available" name="available"
+                  domain="[('selling_price', '=', 0)]"/>
+          <filter string="Sold" name="sold"
+                  domain="[('selling_price', '&gt;', 0)]"/>
+          <separator/>
+          <filter string="Has Garden" name="has_garden"
+                  domain="[('garden', '=', True)]"/>
+          <filter string="Has Garage" name="has_garage"
+                  domain="[('garage', '=', True)]"/>
+          <filter string="For Rent" name="for_rent"
+                  domain="[('rent_price', '&gt;', 0)]"/>
+          <separator/>
+          <filter string="My Properties" name="my_properties"
+                  domain="[('salesperson_id', '=', uid)]"/>
+
+          <group expand="0" string="Group By">
+            <filter string="Property Type" name="group_by_type"
+                    context="{'group_by': 'property_type_id'}"/>
+            <filter string="Postcode" name="group_by_postcode"
+                    context="{'group_by': 'postcode'}"/>
+            <filter string="Salesperson" name="group_by_salesperson"
+                    context="{'group_by': 'salesperson_id'}"/>
+            <filter string="Garden Orientation" name="group_by_orientation"
+                    context="{'group_by': 'garden_orientation'}"/>
+          </group>
+        </search>
+      </field>
+    </record>
+
+    <!-- Pivot view — price analysis by type / orientation -->
+    <record model="ir.ui.view" id="estate_property_pivot_view">
+      <field name="name">estate.property.pivot</field>
+      <field name="model">estate.property</field>
+      <field name="arch" type="xml">
+        <pivot string="Properties Analysis">
+          <field name="property_type_id" type="row"/>
+          <field name="garden_orientation" type="col"/>
+          <field name="expected_price" type="measure"/>
+          <field name="best_price" type="measure"/>
+          <field name="selling_price" type="measure"/>
+        </pivot>
+      </field>
+    </record>
+
+    <!-- Action: opens the model in kanban/list/pivot/form view -->
     <record model="ir.actions.act_window" id="estate_property_action_window">
       <field name="name">Properties</field>
       <field name="res_model">estate.property</field>
-      <field name="view_mode">kanban,list,form</field>
+      <field name="view_mode">kanban,list,pivot,form</field>
+      <field name="search_view_id" ref="estate_property_search_view"/>
+      <field name="context">{'search_default_available': 1, 'group_by': ['property_type_id']}</field>
     </record>
 
   </data>

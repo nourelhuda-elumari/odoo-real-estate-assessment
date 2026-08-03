@@ -69,6 +69,13 @@ class EstateProperty(models.Model):
     # SQL constraints — enforced directly by the database, best for
     # simple single-field checks. Each tuple = (internal name, SQL
     # CHECK condition, error message shown to the user).
+    #
+    # NOTE: SQL constraints are only applied to the database schema
+    # when the module is *upgraded* (Apps > Upgrade), not just when
+    # this file is saved. The Python @api.constrains checks below
+    # duplicate the same rules so they're enforced immediately in the
+    # UI regardless of upgrade state, and give a clean error message
+    # instead of a raw database integrity error.
     # ------------------------------------------------------------------
     _sql_constraints = [
         ('check_expected_price', 'CHECK(expected_price > 0)',
@@ -96,8 +103,47 @@ class EstateProperty(models.Model):
 
     # ------------------------------------------------------------------
     # Python constraints — for rules that need to compare multiple
-    # fields or need custom logic that plain SQL can't express well.
+    # fields, need custom logic that plain SQL can't express well, or
+    # need to be guaranteed to fire without relying on a module upgrade.
     # ------------------------------------------------------------------
+
+    @api.constrains('expected_price')
+    def _check_expected_price_positive(self):
+        for record in self:
+            if record.expected_price <= 0:
+                raise ValidationError(
+                    "The expected price must be strictly positive."
+                )
+
+    @api.constrains('selling_price')
+    def _check_selling_price_positive(self):
+        for record in self:
+            # 0 is allowed (property not sold yet); only negative
+            # values are invalid.
+            if record.selling_price < 0:
+                raise ValidationError(
+                    "The selling price cannot be negative."
+                )
+
+    @api.constrains('rent_price')
+    def _check_rent_price_positive(self):
+        for record in self:
+            if record.rent_price < 0:
+                raise ValidationError(
+                    "The monthly rent cannot be negative."
+                )
+
+    @api.constrains('bedrooms', 'living_area', 'facades', 'garden_area')
+    def _check_non_negative_integers(self):
+        for record in self:
+            if record.bedrooms < 0:
+                raise ValidationError("The number of bedrooms cannot be negative.")
+            if record.living_area < 0:
+                raise ValidationError("The living area cannot be negative.")
+            if record.facades < 0:
+                raise ValidationError("The number of facades cannot be negative.")
+            if record.garden_area < 0:
+                raise ValidationError("The garden area cannot be negative.")
 
     @api.constrains('selling_price', 'expected_price')
     def _check_selling_price(self):

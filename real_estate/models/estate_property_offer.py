@@ -1,4 +1,5 @@
-from odoo import models, fields
+from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 
 
 class EstatePropertyOffer(models.Model):
@@ -27,10 +28,22 @@ class EstatePropertyOffer(models.Model):
     property_id = fields.Many2one("estate.property", required=True)
 
     # An offer of 0 or negative money is meaningless.
+    #
+    # NOTE: same as elsewhere, this SQL check only applies once the
+    # module is upgraded. The Python constraint below fires
+    # immediately in the UI regardless.
     _sql_constraints = [
         ('check_price', 'CHECK(price > 0)',
          'The offer price must be strictly positive.'),
     ]
+
+    @api.constrains('price')
+    def _check_price_positive(self):
+        for record in self:
+            if record.price <= 0:
+                raise ValidationError(
+                    "The offer price must be strictly positive."
+                )
 
     def action_accept(self):
         # Accepting an offer should actually mean something: the
