@@ -159,13 +159,37 @@
 
             <notebook>
               <page string="Offers">
-                <field name="offer_ids">
-                  <list editable="bottom">
-                    <field name="price"/>
-                    <field name="partner_id"/>
-                    <field name="status"/>
-                  </list>
-                </field>
+                <div class="p-3">
+                  <h5 class="mb-3">Offers</h5>
+                  <field name="offer_ids" nolabel="1">
+                    <list editable="bottom"
+                          default_order="status"
+                          decoration-success="status == 'accepted'"
+                          decoration-danger="status == 'refused'">
+                      <field name="price"/>
+                      <field name="partner_id" widget="many2one_avatar"/>
+                      <field name="status" column_invisible="1"/>
+
+                      <!-- Accept button: only shows while the offer
+                           is still pending (no status set yet) -->
+                      <button name="action_accept" type="object" string="Accept"
+                              class="btn-success" icon="fa-check" invisible="status != False"
+                              title="Accept this offer"
+                              groups="real_estate.group_estate_manager,real_estate.group_estate_salesperson"/>
+
+                      <!-- Refuse button: same condition -->
+                      <button name="action_refuse" type="object" string="Refuse"
+                              class="btn-danger" icon="fa-times" invisible="status != False"
+                              title="Refuse this offer"
+                              groups="real_estate.group_estate_manager,real_estate.group_estate_salesperson"/>
+
+                      <!-- Visual confirmation of the outcome once decided -->
+                      <field name="status" widget="badge"
+                             decoration-success="status == 'accepted'"
+                             decoration-danger="status == 'refused'"/>
+                    </list>
+                  </field>
+                </div>
               </page>
               <page string="Photos">
                 <field name="property_image_ids">
