@@ -1,5 +1,5 @@
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 
 
 class EstatePropertyOffer(models.Model):
@@ -45,6 +45,24 @@ class EstatePropertyOffer(models.Model):
                     "The offer price must be strictly positive."
                 )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # As soon as a property receives its first offer, move it out
+        # of "New" and into "Offer Received". A property that's
+        # already sold or canceled shouldn't be receiving new offers.
+        for vals in vals_list:
+            property_id = vals.get("property_id")
+            if property_id:
+                prop = self.env["estate.property"].browse(property_id)
+                if prop.state in ("sold", "canceled"):
+                    raise UserError(
+                        "You cannot make an offer on a property that is "
+                        "already sold or canceled."
+                    )
+                if prop.state == "new":
+                    prop.state = "offer_received"
+        return super().create(vals_list)
+
     def action_accept(self):
         # Accepting an offer should actually mean something: the
         # property's selling price becomes this offer's price, and
@@ -56,6 +74,7 @@ class EstatePropertyOffer(models.Model):
 
             offer.status = "accepted"
             offer.property_id.selling_price = offer.price
+            offer.property_id.state = "offer_accepted"
 
     def action_refuse(self):
         for offer in self:

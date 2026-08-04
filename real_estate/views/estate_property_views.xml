@@ -21,6 +21,10 @@
           <field name="best_price"/>
           <field name="selling_price"/>
           <field name="date_availability"/>
+          <field name="state" widget="badge"
+                 decoration-success="state == 'sold'"
+                 decoration-info="state in ('offer_received', 'offer_accepted')"
+                 decoration-danger="state == 'canceled'"/>
         </list>
       </field>
     </record>
@@ -113,9 +117,18 @@
       <field name="model">estate.property</field>
       <field name="arch" type="xml">
         <form>
+          <header>
+            <button name="action_sold" type="object" string="Sold"
+                    class="btn-primary" invisible="state in ('sold', 'canceled')"/>
+            <button name="action_cancel" type="object" string="Cancel"
+                    invisible="state in ('sold', 'canceled')"/>
+            <field name="state" widget="statusbar"
+                   statusbar_visible="new,offer_received,offer_accepted,sold"/>
+          </header>
           <sheet>
             <widget name="web_ribbon" title="Garden" bg_color="text-bg-success" invisible="not garden"/>
             <widget name="web_ribbon" title="Garage" bg_color="text-bg-info" invisible="not garage"/>
+            <widget name="web_ribbon" title="Canceled" bg_color="text-bg-danger" invisible="state != 'canceled'"/>
 
             <field name="image_1920" widget="image" class="oe_avatar"/>
 
@@ -133,6 +146,7 @@
                 <field name="date_availability"/>
                 <field name="bedrooms"/>
                 <field name="living_area"/>
+                <field name="total_area"/>
                 <field name="facades"/>
                 <field name="google_map_link" widget="url" string="Location (Google Maps)"/>
               </group>
@@ -161,7 +175,7 @@
               <page string="Offers">
                 <div class="p-3">
                   <h5 class="mb-3">Offers</h5>
-                  <field name="offer_ids" nolabel="1">
+                  <field name="offer_ids" nolabel="1" readonly="state in ('sold', 'canceled')">
                     <list editable="bottom"
                           default_order="status"
                           decoration-success="status == 'accepted'"

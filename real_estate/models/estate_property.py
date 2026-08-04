@@ -1,5 +1,5 @@
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 
 
 class EstateProperty(models.Model):
@@ -55,9 +55,31 @@ class EstateProperty(models.Model):
         aggregator="max",
     )
 
+    # Combined living + garden area — stored so it can be searched/sorted.
+    total_area = fields.Integer(
+        compute="_compute_total_area",
+        string="Total Area (m²)",
+        store=True,
+    )
+
     # Salesperson handling the property.
     salesperson_id = fields.Many2one(
         "res.users", string="Salesperson", default=lambda self: self.env.user
+    )
+
+    # Property lifecycle status.
+    state = fields.Selection(
+        selection=[
+            ("new", "New"),
+            ("offer_received", "Offer Received"),
+            ("offer_accepted", "Offer Accepted"),
+            ("sold", "Sold"),
+            ("canceled", "Canceled"),
+        ],
+        string="Status",
+        required=True,
+        copy=False,
+        default="new",
     )
 
     _sql_constraints = [
@@ -81,6 +103,11 @@ class EstateProperty(models.Model):
     def _compute_best_price(self):
         for record in self:
             record.best_price = max(record.offer_ids.mapped("price"), default=0.0)
+
+    @api.depends("living_area", "garden_area")
+    def _compute_total_area(self):
+        for record in self:
+            record.total_area = record.living_area + record.garden_area
 
     @api.constrains('expected_price')
     def _check_expected_price_positive(self):
@@ -128,3 +155,17 @@ class EstateProperty(models.Model):
                 raise ValidationError(
                     "A property without a garden cannot have a garden area or orientation."
                 )
+
+    def action_sold(self):
+        for record in self:
+            if record.state == "canceled":
+                raise UserError("A canceled property cannot be marked as sold.")
+            record.state = "sold"
+        return True
+
+    def action_cancel(self):
+        for record in self:
+            if record.state == "sold":
+                raise UserError("A sold property cannot be canceled.")
+            record.state = "canceled"
+        return True
