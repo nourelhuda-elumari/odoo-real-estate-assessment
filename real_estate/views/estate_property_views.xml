@@ -229,6 +229,12 @@
           <filter string="With Garden" name="has_garden" domain="[('garden', '=', True)]"/>
           <filter string="With Garage" name="has_garage" domain="[('garage', '=', True)]"/>
 
+          <group>
+            <filter string="Property Type" name="group_by_property_type" context="{'group_by': 'property_type_id'}"/>
+            <filter string="Postcode" name="group_by_postcode" context="{'group_by': 'postcode'}"/>
+            <filter string="Availability Date" name="group_by_date_availability" context="{'group_by': 'date_availability'}"/>
+          </group>
+
           <searchpanel>
             <field name="property_type_id" icon="fa-building" enable_counters="1"/>
           </searchpanel>
